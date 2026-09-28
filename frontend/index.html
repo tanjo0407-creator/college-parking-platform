@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusPark • Intelligent College Parking Management Platform</title>
+  
+  <!-- Modern Inter Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-navbar">
+    <div class="brand-section">
+      <div class="brand-icon">🅿️</div>
+      <div>
+        <h1 class="brand-title">CampusPark Intelligent Operations</h1>
+        <div class="brand-subtitle">
+          <span class="live-indicator"></span>
+          <span>Live Campus Grid Synchronization Active</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <!-- Active Driver Indicator & Switcher -->
+      <div class="profile-pill" id="active-profile-pill" title="Current Active Driver Profile">
+        <span id="user-role-badge" class="role-badge role-faculty">FACULTY</span>
+        <span id="user-vehicle-label" style="font-weight: 600; font-size: 0.82rem;">Loading...</span>
+      </div>
+
+      <!-- Security / RBAC Mode Toggle -->
+      <div class="security-mode-toggle" id="security-mode-toggle" title="Toggle Public vs Enforcement RBAC View">
+        <span>🛡️</span>
+        <span id="security-status-text">Public View</span>
+      </div>
+
+      <!-- Enforcement Logs Button -->
+      <button class="btn btn-secondary" id="view-logs-btn">
+        <span>📋</span> Enforcement Logs
+      </button>
+
+      <!-- Theme Switcher -->
+      <button class="btn btn-secondary" id="theme-toggle-btn" title="Toggle Dark/Light Mode" style="padding: 0.5rem 0.75rem;">
+        🌙
+      </button>
+    </div>
+  </header>
+
+  <!-- Real-Time Metrics Bar -->
+  <section class="metrics-container" aria-label="Campus Parking Metrics">
+    <div class="metric-card">
+      <div class="metric-header">
+        <span>Total Campus Spots</span>
+        <span>🏷️</span>
+      </div>
+      <div class="metric-value" id="metric-total-spots">76</div>
+      <div class="metric-footer">Across 4 Dedicated Campus Zones</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span>Available Spots</span>
+        <span style="color: var(--spot-green);">🟢</span>
+      </div>
+      <div class="metric-value" style="color: #34d399;" id="metric-available-spots">--</div>
+      <div class="metric-footer">Ready for Immediate Allocation</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span>Occupied Spots</span>
+        <span style="color: var(--spot-red);">🔴</span>
+      </div>
+      <div class="metric-value" style="color: #f87171;" id="metric-occupied-spots">--</div>
+      <div class="metric-footer">Live Active Parked Vehicles</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span>Campus Capacity</span>
+        <span>📊</span>
+      </div>
+      <div class="metric-value" id="metric-occupancy-rate">--%</div>
+      <div class="metric-bar-bg">
+        <div class="metric-bar-fill" id="metric-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="main-workspace">
+    <!-- Viewport Panel (Interactive Map or Zone Grid) -->
+    <section class="viewport-panel">
+      <div class="viewport-header">
+        <div class="viewport-title-group">
+          <button class="back-to-campus-btn" id="back-to-campus-btn">
+            <span>←</span> Back to Campus Map
+          </button>
+          <h2 class="viewport-title" id="viewport-title">College Campus Overview Map</h2>
+        </div>
+
+        <div class="viewport-legend">
+          <div class="legend-item">
+            <span class="legend-dot legend-green"></span>
+            <span>Vacant</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot legend-red"></span>
+            <span>Occupied</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot legend-yellow"></span>
+            <span>Recommended</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campus Map SVG View Container -->
+      <div class="map-canvas-container" id="campus-map-view">
+        <!-- SVG will be dynamically injected by campusMap.js -->
+        <div style="color: #94a3b8; font-size: 0.9rem;">Loading interactive campus map...</div>
+      </div>
+
+      <!-- Zone Grid Drilldown View Container -->
+      <div class="zone-grid-view" id="zone-grid-view">
+        <!-- 2D Spot Grid rendered by zoneMap.js -->
+      </div>
+
+      <!-- Audit Enforcement Table (When active) -->
+      <div class="audit-section" id="audit-section">
+        <div class="audit-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #38bdf8;">Enforcement & Occupancy Audit Log</h3>
+              <p style="font-size: 0.8rem; color: #94a3b8;">Real-time timestamps, vehicle license numbers, and parked duration records.</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Spot Code</th>
+                  <th>Status</th>
+                  <th>Driver Name & Role</th>
+                  <th>Department / Purpose</th>
+                  <th>License Plate</th>
+                  <th>Check-In Time</th>
+                  <th>Duration</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table-body">
+                <!-- Injected via app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sidebar Controls Panel -->
+    <aside class="sidebar-panel">
+      <!-- Smart Driver & Spot Allocation -->
+      <div class="sidebar-card">
+        <h3><span>🎯</span> Smart Spot Allocation</h3>
+        <div class="driver-selector-box">
+          <div class="form-group">
+            <label for="user-select">Select Driver Profile (Test Matrix)</label>
+            <select id="user-select" class="form-select">
+              <!-- Populated via API -->
+            </select>
+          </div>
+
+          <button class="btn btn-primary" id="suggest-spot-btn" style="width: 100%; justify-content: center; margin-top: 0.25rem;">
+            <span>✨</span> Calculate & Allocate Optimal Spot
+          </button>
+
+          <button class="btn btn-secondary" id="register-visitor-btn" style="width: 100%; justify-content: center;">
+            <span>➕</span> Register New User & Vehicle
+          </button>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.25); border-radius: var(--radius-md); font-size: 0.76rem; color: #94a3b8; border: 1px solid var(--bg-card-border);">
+          <strong style="color: #f1f5f9;">Policy Enforcement Rules:</strong>
+          <ul style="padding-left: 1.2rem; margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem;">
+            <li>Faculty/Admin 4W ➔ <code style="color: #38bdf8;">FACULTY_4W</code> or Visitor bay</li>
+            <li>Faculty/Admin 2W ➔ <code style="color: #c084fc;">FACULTY_2W</code> or Visitor bay</li>
+            <li>Student 2W ➔ <code style="color: #34d399;">STUDENT_2W</code></li>
+            <li>Student 4W ➔ <strong style="color: #f87171;">DENIED (Rule Violation)</strong></li>
+            <li>Visitor ➔ <code style="color: #fbbf24;">VISITOR_PARKING</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Traffic Simulator Controls -->
+      <div class="sidebar-card">
+        <h3><span>⚡</span> Live Traffic Simulator</h3>
+        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+          Simulate incoming vehicles and departures to test real-time map synchronization across clients.
+        </p>
+        
+        <button class="btn btn-primary" id="sim-auto-btn" style="width: 100%; justify-content: center;">
+          ▶ Start Traffic Simulator
+        </button>
+
+        <div class="sim-controls-grid">
+          <button class="btn btn-secondary" id="sim-step-btn" title="Trigger 1 random check-in/out">
+            <span>🎲</span> Random Step
+          </button>
+          <button class="btn btn-secondary" id="sim-reset-btn" title="Vacate all spots">
+            <span>🔄</span> Vacate All
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Activity Feed Ticker -->
+      <div class="sidebar-card">
+        <h3><span>📡</span> Live Activity Stream</h3>
+        <div class="activity-list" id="activity-list">
+          <!-- Populated live via WebSocket events -->
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Spot Detail / Check-In Modal -->
+  <div class="modal-overlay" id="spot-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="spot-modal-title">Spot Details</h3>
+        <button class="modal-close" id="spot-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="spot-modal-body">
+        <!-- Injected via app.js -->
+      </div>
+      <div class="modal-footer" id="spot-modal-footer">
+        <!-- Injected via app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule Violation Alert Modal -->
+  <div class="modal-overlay" id="violation-modal">
+    <div class="modal-card" style="border-color: rgba(239, 68, 68, 0.5);">
+      <div class="modal-header" style="background: rgba(239, 68, 68, 0.15); border-bottom-color: rgba(239, 68, 68, 0.3);">
+        <h3 class="modal-title" id="violation-title" style="color: #f87171; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🚫</span> Access Denied / Rule Violation
+        </h3>
+        <button class="modal-close" id="violation-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="violation-banner">
+          <div class="violation-icon">⚠️</div>
+          <div class="violation-text">
+            <h4>Parking Allocation Denied</h4>
+            <p id="violation-msg">Campus policy strictly prohibits student four-wheelers from parking on college grounds.</p>
+          </div>
+        </div>
+        <div style="font-size: 0.8rem; color: #94a3b8; line-height: 1.5;" id="violation-policy-note">
+          Campus Environmental & Safety Regulation: Undergrad and graduate student four-wheelers are strictly restricted from university parking zones to ensure adequate emergency lane clearances and faculty access.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('violation-modal').style.display='none'">
+          Acknowledge & Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User & Vehicle Registration Modal -->
+  <div class="modal-overlay" id="visitor-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Register New Campus User & Vehicle</h3>
+        <button class="modal-close" id="visitor-modal-close">&times;</button>
+      </div>
+      <form id="visitor-form">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <div class="form-group">
+            <label for="vis-role">Campus Role *</label>
+            <select id="vis-role" class="form-select" required>
+              <option value="STUDENT">Student (Undergrad / Postgrad)</option>
+              <option value="FACULTY">Faculty Member (Prof / Lecturer)</option>
+              <option value="ADMIN">University Administration / Staff</option>
+              <option value="VISITOR">Guest / Campus Visitor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="vis-vtype">Vehicle Type *</label>
+            <select id="vis-vtype" class="form-select" required>
+              <option value="TWO_WHEELER">Two-Wheeler (Motorcycle / Scooter / E-Bike)</option>
+              <option value="FOUR_WHEELER">Four-Wheeler (Car / Sedan / SUV)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="vis-name">Full Name *</label>
+            <input type="text" id="vis-name" class="form-input" placeholder="e.g. Alex Morgan" required>
+          </div>
+          <div class="form-group">
+            <label for="vis-phone">Contact Phone Number *</label>
+            <input type="tel" id="vis-phone" class="form-input" placeholder="e.g. +1-555-7788" required>
+          </div>
+          <div class="form-group">
+            <label for="vis-plate">License Plate Number *</label>
+            <input type="text" id="vis-plate" class="form-input" placeholder="e.g. KA-05-AB-1234" required style="font-family: monospace; text-transform: uppercase;">
+          </div>
+          <div class="form-group">
+            <label for="vis-purpose">Department / Purpose</label>
+            <input type="text" id="vis-purpose" class="form-input" placeholder="e.g. Computer Science Dept, Year 2">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('visitor-modal').style.display='none'">Cancel</button>
+          <button type="submit" class="btn btn-primary">Register & Verify Access</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Spot QR Code Modal -->
+  <div class="modal-overlay" id="qr-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="qr-spot-title">Spot QR Check-In</h3>
+        <button class="modal-close" id="qr-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <p id="qr-spot-desc" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.75rem;"></p>
+        <div class="qr-preview-box">
+          <div id="qr-svg-wrapper"></div>
+          <span style="font-size: 0.75rem; color: #475569; font-family: monospace;">SCAN TO PARK</span>
+        </div>
+        <p style="font-size: 0.75rem; color: #64748b;">
+          Drivers arriving at this spot physically can scan this code with their smartphone camera for instant zero-touch spot locking.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('qr-modal').style.display='none'">Close</button>
+        <button class="btn btn-primary" id="qr-simulate-scan-btn">
+          <span>📷</span> Simulate Mobile Arrival Scan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JavaScript App Entrypoint (ES Module) -->
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
